@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 OUT="./out"
 BUILD_DIR="./build/cmake"
 EROFS_VERSION="v$(. scripts/get-version-number)"
@@ -90,11 +92,33 @@ build()
 	fi
 }
 
-build "Android" "arm64-v8a" "android-31"
-build "Android" "armeabi-v7a" "android-31"
-build "Android" "x86_64" "android-31"
-build "Android" "x86" "android-31"
-build "Linux" "x86_64" "WSL"
-build "Linux" "x86_64"
+# build "Android" "arm64-v8a" "android-31"
+# build "Android" "armeabi-v7a" "android-31"
+# build "Android" "x86_64" "android-31"
+# build "Android" "x86" "android-31"
+# build "Linux" "x86_64" "WSL"
+# build "Linux" "x86_64"
+
+platform=$1
+architecture=$2
+version=$3
+
+if [ -z "$platform" ] || [ -z "$architecture" ]; then
+	echo "Usage: $0 <platform> <architecture> <version>"
+	echo "Example: $0 Android arm64-v8a android-31"
+	echo "Example: $0 Android x86_64 android-31"
+	echo "Example: $0 Android x86 android-31"
+	echo "Example: $0 Linux x86_64 WSL"
+	echo "Example: $0 Linux x86_64"
+	exit 1
+fi
+
+if [ -z "$version" ]; then
+	echo "Building for platform: $platform, architecture: $architecture"
+	build $platform $architecture
+else
+	echo "Building for platform: $platform, architecture: $architecture, version: $version"
+	build $platform $architecture $version
+fi
 
 exit 0
