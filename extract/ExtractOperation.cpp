@@ -8,6 +8,7 @@
 #include "Logging.h"
 #include "Utils.h"
 #include "threadpool.h"
+#include <sys/stat.h>
 
 namespace skkk {
 
@@ -45,11 +46,14 @@ namespace skkk {
 
 	void ExtractOperation::setOutDir(const char *path) { outDir = path; }
 
+	void ExtractOperation::setConfDir(const char *path) { configDir = path; }
+
 	int ExtractOperation::initOutDir() {
 		int rc = RET_EXTRACT_DONE;
 		strTrim(outDir);
+		strTrim(configDir);
 		if (outDir.empty()) {
-			configDir = "./config";
+			// configDir = "./config";
 			outDir = "./" + imgBaseName;
 		} else {
 			if (outDir.size() > 1 &&
@@ -72,11 +76,11 @@ namespace skkk {
 				LOGCE("Not allow extracting to root: '%s'", outDir.c_str());
 				rc = RET_EXTRACT_OUTDIR_ROOT;
 			} else {
-				configDir = outDir + "/config";
+				// configDir = outDir + "/config";
 				outDir = outDir + "/" + imgBaseName;
 			}
 #else
-			configDir = outDir + "/config";
+			// configDir = outDir + "/config";
 			outDir = outDir + "/" + imgBaseName;
 #endif
 		}
@@ -194,15 +198,17 @@ namespace skkk {
 	}
 
 	void ExtractOperation::extractFsConfigAndSelinuxLabelAndFsOptions() const {
-		string fsConfigPath = configDir + "/" + imgBaseName + "_fs_config";
-		string fsSelinuxLabelsPath = configDir + "/" + imgBaseName + "_file_contexts";
-		string fsOptionPath = configDir + "/" + imgBaseName + "_fs_options";
+		string fsConfigPath = configDir + "/" + imgBaseName + "_filesystem_config.txt";
+		string fsSelinuxLabelsPath = configDir + "/" + imgBaseName + "_file_contexts.txt";
+		string fsOptionPath = configDir + "/" + imgBaseName + "_filesystem_features.txt";
 		FILE *fsConfigFile = fopen(fsConfigPath.c_str(), "wb");
 		FILE *selinuxLabelsFile = fopen(fsSelinuxLabelsPath.c_str(), "wb");
 		FILE *fsOptionFile = nullptr;
+        struct stat imgStat;
+        stat(imgPath.c_str(), &imgStat);
 		char uuid[37] = {0};
 		const char *mountPoint = imgBaseName.c_str();
-		LOGCI(BROWN "fs_config|file_contexts|fs_options" LOG_RESET_COLOR "  " GREEN2_BOLD "saving..." LOG_RESET_COLOR);
+		LOGCI(BROWN "filesystem_config|file_contexts|filesystem_features" LOG_RESET_COLOR "  " GREEN2_BOLD "saving..." LOG_RESET_COLOR);
 		if (fsConfigFile && selinuxLabelsFile) {
 			for (auto &eNode: erofsNodes) {
 				if (otherPathsInRootDir.count(eNode->getPath()) > 0) continue;
@@ -215,8 +221,13 @@ namespace skkk {
 				if (fsOptionFile) {
 					auto time = (time_t) sbi.build_time;
 					erofs_uuid_unparse_lower(sbi.uuid, uuid);
-					fprintf(fsOptionFile, "Filesystem created:        %s", ctime(&time));
+					fprintf(fsOptionFile, "Filesystem volume name:    %s\n", sbi.volume_name);
 					fprintf(fsOptionFile, "Filesystem UUID:           %s\n", uuid);
+					fprintf(fsOptionFile, "Filesystem magic number:   0x%04X\n", EROFS_SUPER_MAGIC_V1);
+					fprintf(fsOptionFile, "Block size:                %lu\n", sbi.total_blocks);
+					fprintf(fsOptionFile, "Inode count:               %lu\n", sbi.inos);
+					fprintf(fsOptionFile, "Partition Size:            %lu\n", imgStat.st_size);
+					fprintf(fsOptionFile, "Filesystem created:        %s", ctime(&time));
 					// The options are for reference only, please modify according to the actual situation.
 					fprintf(fsOptionFile, "mkfs.erofs options:        "
 										  "-zlz4hc,1 "               // default: lz4hc,1
@@ -233,9 +244,9 @@ namespace skkk {
 							outDir.c_str());
 				}
 			}
-			LOGCI(BROWN "fs_config|file_contexts|fs_options" LOG_RESET_COLOR "  " GREEN2_BOLD "done." LOG_RESET_COLOR);
+			LOGCI(BROWN "filesystem_config|file_contexts|filesystem_features" LOG_RESET_COLOR "  " GREEN2_BOLD "done." LOG_RESET_COLOR);
 		} else
-			LOGCE(BROWN "fs_config|file_contexts|fs_options" LOG_RESET_COLOR "  " RED2_BOLD "fail!" LOG_RESET_COLOR);
+			LOGCE(BROWN "filesystem_config|file_contexts|filesystem_features" LOG_RESET_COLOR "  " RED2_BOLD "fail!" LOG_RESET_COLOR);
 		if (fsConfigFile) fclose(fsConfigFile);
 		if (selinuxLabelsFile) fclose(selinuxLabelsFile);
 		if (fsOptionFile) fclose(fsOptionFile);

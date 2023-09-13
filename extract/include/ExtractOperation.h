@@ -87,6 +87,8 @@ namespace skkk {
 
 			void setOutDir(const char *path);
 
+			void setConfDir(const char *path);
+
 			int initOutDir();
 
 			int createExtractOutDir() const;

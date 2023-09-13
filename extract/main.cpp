@@ -49,6 +49,7 @@ static inline void usage() {
 			 "  " GREEN2_BOLD "-T#" COLOR_NONE "                     " BROWN "[" GREEN2_BOLD "1-%u" COLOR_NONE BROWN "] Use # threads, -T0: " GREEN2_BOLD "%u" COLOR_NONE COLOR_NONE "\n"
 			 "  " GREEN2_BOLD "--only-cfg" COLOR_NONE "              " BROWN "Only extract fs_config|file_contexts|fs_options" COLOR_NONE "\n"
 			 "  " GREEN2_BOLD "-o, --outdir=X" COLOR_NONE "          " BROWN "Output dir" COLOR_NONE "\n"
+			 "  " GREEN2_BOLD "-C, --confdir=X" COLOR_NONE "         " BROWN "Config dir" COLOR_NONE "\n"
 			 "  " GREEN2_BOLD "-V, --version" COLOR_NONE "           " BROWN "Print the version info" COLOR_NONE "\n",
 			 eo->limitHardwareConcurrency,
 			 eo->hardwareConcurrency
@@ -70,6 +71,7 @@ static struct option arg_options[] = {
 		{"version",   no_argument,       nullptr, 'V'},
 		{"image",     required_argument, nullptr, 'i'},
 		{"outdir",    required_argument, nullptr, 'o'},
+		{"confdir",   required_argument, nullptr, 'C'},
 		{"print",     required_argument, nullptr, 'P'},
 		{"overwrite", no_argument,       nullptr, 'f'},
 		{"extract",   required_argument, nullptr, 'X'},
@@ -82,7 +84,7 @@ static int parseAndCheckExtractCfg(int argc, char **argv) {
 	int opt;
 	int rc = RET_EXTRACT_CONFIG_FAIL;
 	bool enterParseOpt = false;
-	while ((opt = getopt_long(argc, argv, "hi:pxfrc:P:T:o:X:V", arg_options, nullptr)) != -1) {
+	while ((opt = getopt_long(argc, argv, "hi:pxfrc:P:T:o:C:X:V", arg_options, nullptr)) != -1) {
 		enterParseOpt = true;
 		switch (opt) {
 			case 'h':
@@ -102,6 +104,12 @@ static int parseAndCheckExtractCfg(int argc, char **argv) {
 					eo->setOutDir(optarg);
 				}
 				LOGCD("outDir=%s", eo->getOutDir().c_str());
+				break;
+            case 'C':
+				if (optarg) {
+					eo->setConfDir(optarg);
+				}
+				LOGCD("confDir=%s", eo->getConfDir().c_str());
 				break;
 			case 'p':
 				eo->isPrintAllNode = true;
